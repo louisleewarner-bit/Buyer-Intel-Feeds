@@ -38,9 +38,12 @@ function build() {
     // Serverless-safe: a held copy is used when this instance has one, otherwise the page is fetched again
     let held = chunk === 0 ? null : store.get(href);
     if (!held) {
-      let res;
-      try { res = await fetch(href, { headers: { accept: "application/json", "user-agent": "BuyerIntelFeeds/2.0" }, signal: AbortSignal.timeout(100_000) }); }
-      catch (e) { return fail((e.name === "TimeoutError" ? "timeout: " : "network: ") + (e.message || e)); }
+      let res, err;
+      for (let attempt = 0; attempt < 2 && !res; attempt++) {   // two tries of 28s each, inside the client's 60s limit
+        try { res = await fetch(href, { headers: { accept: "application/json", "user-agent": "BuyerIntelFeeds/2.0" }, signal: AbortSignal.timeout(28_000) }); }
+        catch (e) { err = e; }
+      }
+      if (!res) return fail((err && err.name === "TimeoutError" ? "timeout: " : "network: ") + (err && err.message || err));
       if (res.status === 429) return fail("rate_limited: the site asked us to wait");
       if (!res.ok && res.status >= 500) return fail("site_error: HTTP " + res.status);
       const b64 = gzipSync(Buffer.from(await res.arrayBuffer())).toString("base64");
