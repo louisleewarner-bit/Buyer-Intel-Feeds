@@ -35,20 +35,19 @@ function build() {
   }, async ({ url, chunk }) => {
     sweep();
     let href; try { href = checkUrl(url); } catch (e) { return fail(e.message); }
-    if (chunk === 0) {
+    // Serverless-safe: a held copy is used when this instance has one, otherwise the page is fetched again
+    let held = chunk === 0 ? null : store.get(href);
+    if (!held) {
       let res;
-      try { res = await fetch(href, { headers: { accept: "application/json", "user-agent": "BuyerIntelFeeds/2.0" }, signal: AbortSignal.timeout(90_000) }); }
+      try { res = await fetch(href, { headers: { accept: "application/json", "user-agent": "BuyerIntelFeeds/2.0" }, signal: AbortSignal.timeout(50_000) }); }
       catch (e) { return fail((e.name === "TimeoutError" ? "timeout: " : "network: ") + (e.message || e)); }
       if (res.status === 429) return fail("rate_limited: the site asked us to wait");
       if (!res.ok && res.status >= 500) return fail("site_error: HTTP " + res.status);
-      const body = Buffer.from(await res.arrayBuffer());
-      const b64 = gzipSync(body).toString("base64");
+      const b64 = gzipSync(Buffer.from(await res.arrayBuffer())).toString("base64");
       const parts = []; for (let i = 0; i < b64.length; i += SLICE) parts.push(b64.slice(i, i + SLICE));
       if (!parts.length) parts.push("");
-      store.set(href, { parts, at: Date.now() }); fetched++;
+      held = { parts, at: Date.now() }; store.set(href, held); fetched++;
     }
-    const held = store.get(href);
-    if (!held) return fail("expired: this page is no longer held, fetch it again");
     if (chunk >= held.parts.length) return fail("expired: no such slice");
     return ok({ data: held.parts[chunk], encoding: "gzip+base64", chunks: held.parts.length, chunk });
   });
@@ -69,4 +68,5 @@ app.post("/mcp", async (req, res) => {
   await transport.handleRequest(req, res, req.body);
 });
 app.all("/mcp", (_q, r) => r.status(405).json({ error: "POST only" }));
-app.listen(PORT, () => console.log("Buyer Intel Feeds listening on :" + PORT));
+if (!process.env.VERCEL) app.listen(PORT, () => console.log("Buyer Intel Feeds listening on :" + PORT));
+export default app;
