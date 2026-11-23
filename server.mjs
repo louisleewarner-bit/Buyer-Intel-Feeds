@@ -39,7 +39,7 @@ function build() {
     let held = chunk === 0 ? null : store.get(href);
     if (!held) {
       let res;
-      try { res = await fetch(href, { headers: { accept: "application/json", "user-agent": "BuyerIntelFeeds/2.0" }, signal: AbortSignal.timeout(50_000) }); }
+      try { res = await fetch(href, { headers: { accept: "application/json", "user-agent": "BuyerIntelFeeds/2.0" }, signal: AbortSignal.timeout(100_000) }); }
       catch (e) { return fail((e.name === "TimeoutError" ? "timeout: " : "network: ") + (e.message || e)); }
       if (res.status === 429) return fail("rate_limited: the site asked us to wait");
       if (!res.ok && res.status >= 500) return fail("site_error: HTTP " + res.status);
