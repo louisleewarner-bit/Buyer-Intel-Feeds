@@ -1,0 +1,25 @@
+{
+  "name": "buyer-intel-feeds",
+  "version": "1.0.0",
+  "description": "",
+  "type": "module", "main": "server.mjs",
+  "scripts": {
+    "start": "node server.mjs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/louisleewarner-bit/Buyer-Intel-Feeds.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/louisleewarner-bit/Buyer-Intel-Feeds/issues"
+  },
+  "homepage": "https://github.com/louisleewarner-bit/Buyer-Intel-Feeds#readme",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.2",
+    "express": "^5.3.0",
+    "zod": "^4.6.7"
+  }
+}
